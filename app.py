@@ -1,9 +1,8 @@
 import streamlit as st
 import numpy as np
-import pandas as pd
 import pickle
+import gdown
 import os
-import requests
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
@@ -12,64 +11,65 @@ st.set_page_config(
     layout="centered"
 )
 
-# ---------------- PATHS ----------------
-MODEL_PATH = "student_performance_model.pkl"
-SCALER_PATH = "scaler.pkl"
-DATA_PATH = "Student_performance_data.csv"
+# ---------------- TITLE ----------------
+st.markdown("""
+<h1 style='text-align:center;'>🎓 Student Performance Prediction</h1>
+<p style='text-align:center;color:gray;'>
+Predict student performance using Machine Learning
+</p>
+""", unsafe_allow_html=True)
 
+# ---------------- MODEL DOWNLOAD ----------------
 MODEL_URL = "https://drive.google.com/uc?export=download&id=1gVFLj41ESTQgwFQQDIl4aPBrTnb6-pCg"
+MODEL_PATH = "model.pkl"
 
-
-# ---------------- DOWNLOAD MODEL ----------------
 @st.cache_resource
 def load_model():
     if not os.path.exists(MODEL_PATH):
-        with st.spinner("📥 Downloading ML model... Please wait"):
-            response = requests.get(MODEL_URL)
-            response.raise_for_status()
-
-            with open(MODEL_PATH, "wb") as f:
-                f.write(response.content)
-
-    with open(MODEL_PATH, "rb") as f:
-        return pickle.load(f)
+        with st.spinner("Downloading model from Google Drive..."):
+            gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
+    return pickle.load(open(MODEL_PATH, "rb"))
 
 @st.cache_resource
 def load_scaler():
-    with open(SCALER_PATH, "rb") as f:
-        return pickle.load(f)
-
-@st.cache_data
-def load_features():
-    df = pd.read_csv(DATA_PATH)
-    X = df.drop(columns=["Performance Index"])  # ⚠️ target column
-    return X.columns.tolist()
+    return pickle.load(open("scaler.pkl", "rb"))
 
 model = load_model()
 scaler = load_scaler()
-feature_names = load_features()
 
-# ---------------- UI ----------------
-st.title("🎓 Student Performance Prediction")
-st.markdown("Machine Learning based Student Performance Prediction System")
-st.divider()
+# ---------------- INPUT SECTION ----------------
+st.subheader("📥 Enter Student Details")
 
-with st.form("student_form"):
-    st.subheader("📊 Enter Student Details")
+col1, col2 = st.columns(2)
 
-    user_input = {}
-    for feature in feature_names:
-        user_input[feature] = st.number_input(feature, value=0.0)
+with col1:
+    hours_studied = st.number_input("📘 Hours Studied", 0, 24, 5)
+    attendance = st.number_input("🏫 Attendance (%)", 0, 100, 75)
+    sleep_hours = st.number_input("😴 Sleep Hours", 0, 12, 7)
 
-    submit = st.form_submit_button("🔮 Predict")
+with col2:
+    previous_score = st.number_input("📝 Previous Score", 0, 100, 60)
+    extracurricular = st.selectbox("🎨 Extracurricular Activities", ["No", "Yes"])
+    internet_access = st.selectbox("🌐 Internet Access", ["No", "Yes"])
 
-if submit:
-    input_df = pd.DataFrame([user_input])
-    input_scaled = scaler.transform(input_df)
-    prediction = model.predict(input_scaled)[0]
+# Encoding
+extra = 1 if extracurricular == "Yes" else 0
+internet = 1 if internet_access == "Yes" else 0
 
-    st.divider()
-    st.success(f"🎯 Predicted Performance Score: **{prediction:.2f}**")
+# ---------------- PREDICTION ----------------
+if st.button("🔮 Predict Performance"):
+    input_data = np.array([[hours_studied, attendance, sleep_hours,
+                             previous_score, extra, internet]])
 
-st.divider()
-st.caption("Built with ❤️ using Streamlit & Machine Learning")
+    scaled_data = scaler.transform(input_data)
+    prediction = model.predict(scaled_data)[0]
+
+    st.success(f"📊 Predicted Student Performance Score: **{prediction:.2f}**")
+
+# ---------------- FOOTER ----------------
+st.markdown("""
+<hr>
+<p style='text-align:center;color:gray;'>
+Made with ❤️ using Streamlit & Machine Learning
+</p>
+""", unsafe_allow_html=True)
