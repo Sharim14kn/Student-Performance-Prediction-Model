@@ -4,88 +4,82 @@ import joblib
 import gdown
 import os
 
-# ================= CONFIG =================
+# ---------------- CONFIG ----------------
 st.set_page_config(
     page_title="Student Performance Predictor",
     page_icon="🎓",
     layout="centered"
 )
 
-MODEL_URL = "https://drive.google.com/uc?id=1L__y451voKm1F7OE8cZizHm_Fq3mzTDW"
-MODEL_PATH = "student_model.pkl"
-
-# ================= LOAD MODEL =================
+# ---------------- DOWNLOAD MODEL ----------------
 @st.cache_resource
-def load_model():
-    if not os.path.exists(MODEL_PATH):
-        gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
-    return joblib.load(MODEL_PATH)
+def load_files():
+    if not os.path.exists("model.pkl"):
+        gdown.download(
+            "https://drive.google.com/uc?id=1L__y451voKm1F7OE8cZizHm_Fq3mzTDW",
+            "model.pkl",
+            quiet=False
+        )
 
-model = load_model()
+    if not os.path.exists("scaler.pkl"):
+        gdown.download(
+            "https://drive.google.com/uc?id=1x4rRiiEOb_I9yA0UXC1UaanA-s4rYZXb",
+            "scaler.pkl",
+            quiet=False
+        )
 
-# ================= UI =================
+    model = joblib.load("model.pkl")
+    scaler = joblib.load("scaler.pkl")
+    return model, scaler
+
+
+model, scaler = load_files()
+
+# ---------------- UI ----------------
 st.title("🎓 Student Performance Prediction")
-st.caption("ML-based academic score prediction")
+st.markdown("Predict student performance using ML model")
+
 st.divider()
 
+# ---------------- INPUTS ----------------
+col1, col2 = st.columns(2)
 
+with col1:
+    gender = st.selectbox("Gender", [0, 1])
+    race = st.selectbox("Race/Ethnicity", [0, 1, 2, 3, 4])
+    parental_edu = st.selectbox("Parental Education", [0, 1, 2, 3, 4, 5])
+    lunch = st.selectbox("Lunch Type", [0, 1])
+    test_prep = st.selectbox("Test Preparation", [0, 1])
+    math_score = st.slider("Math Score", 0, 100, 50)
+    reading_score = st.slider("Reading Score", 0, 100, 50)
 
-# ================= INPUT FORM =================
-with st.form("prediction_form"):
-    col1, col2 = st.columns(2)
+with col2:
+    writing_score = st.slider("Writing Score", 0, 100, 50)
+    study_hours = st.slider("Study Hours", 0, 10, 4)
+    attendance = st.slider("Attendance %", 0, 100, 85)
+    internet = st.selectbox("Internet Access", [0, 1])
+    family_support = st.selectbox("Family Support", [0, 1])
+    extra_classes = st.selectbox("Extra Classes", [0, 1])
 
-    with col1:
-        age = st.number_input("🎂 Age", 10, 25, 18)
-        study_time = st.slider("📘 Study Time (1–4)", 1, 4, 2)
-        failures = st.slider("⚠️ Past Failures", 0, 4, 0)
-        absences = st.number_input("❌ Absences", 0, 100, 4)
-
-    with col2:
-        health = st.slider("💪 Health (1–5)", 1, 5, 3)
-        free_time = st.slider("🎮 Free Time (1–5)", 1, 5, 3)
-
-    submit = st.form_submit_button("🔍 Predict")
-
-# ================= PREDICTION =================
-if submit:
-    """
-    FINAL FEATURE VECTOR (13 features)
-    Order MUST match training order
-    """
-
+# ---------------- PREDICTION ----------------
+if st.button("📊 Predict Performance"):
     input_data = np.array([[
-        1,          # school (GP=1 default)
-        1,          # sex (Male=1)
-        age,        # age
-        1,          # address (Urban=1)
-        study_time, # studytime
-        failures,   # failures
-        0,          # schoolsup (No)
-        1,          # famsup (Yes)
-        0,          # paid classes (No)
-        1,          # activities (Yes)
-        health,     # health
-        absences,   # absences
-        free_time   # freetime
+        gender,
+        race,
+        parental_edu,
+        lunch,
+        test_prep,
+        math_score,
+        reading_score,
+        writing_score,
+        study_hours,
+        attendance,
+        internet,
+        family_support,
+        extra_classes
     ]])
 
-    # SAFETY CHECK
-    if input_data.shape[1] != model.n_features_in_:
-        st.error("❌ Feature mismatch even after fix")
-        st.stop()
+    scaled_data = scaler.transform(input_data)
+    prediction = model.predict(scaled_data)[0]
 
-    prediction = model.predict(input_data)[0]
-
-    # ================= RESULT =================
-    st.success(f"📊 Predicted Final Score: **{prediction:.2f}**")
-
-    if prediction >= 75:
-        st.balloons()
-        st.markdown("🎉 **Excellent Performance Expected**")
-    elif prediction >= 50:
-        st.markdown("🙂 **Average Performance Expected**")
-    else:
-        st.warning("⚠️ **Needs Improvement**")
-
-st.divider()
-st.caption("🚀 Built with Streamlit & Scikit-learn")
+    st.success(f"🎯 Predicted Performance Score: **{prediction:.2f}**")
