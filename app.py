@@ -20,7 +20,7 @@ Predict student performance using Machine Learning
 """, unsafe_allow_html=True)
 
 # ---------------- MODEL DOWNLOAD ----------------
-MODEL_URL = "https://drive.google.com/uc?export=download&id=1gVFLj41ESTQgwFQQDIl4aPBrTnb6-pCg"
+MODEL_URL = "https://drive.google.com/file/d/1L__y451voKm1F7OE8cZizHm_Fq3mzTDW/view?usp=sharing"
 MODEL_PATH = "model.pkl"
 
 @st.cache_resource
