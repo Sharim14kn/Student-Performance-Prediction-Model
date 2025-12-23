@@ -21,7 +21,7 @@ Predict student performance using Machine Learning
 
 # ---------------- MODEL DOWNLOAD ----------------
 MODEL_URL = "https://drive.google.com/file/d/1L__y451voKm1F7OE8cZizHm_Fq3mzTDW/view?usp=sharing"
-MODEL_PATH = "model.pkl"
+MODEL_PATH = "scalar.pkl"
 
 @st.cache_resource
 def load_model():
