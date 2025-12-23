@@ -28,7 +28,7 @@ st.title("🎓 Student Performance Prediction")
 st.caption("ML-based academic score prediction")
 st.divider()
 
-st.info(f"✅ Model expects **{model.n_features_in_} features**")
+
 
 # ================= INPUT FORM =================
 with st.form("prediction_form"):
