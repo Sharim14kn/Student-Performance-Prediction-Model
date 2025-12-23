@@ -1,75 +1,63 @@
 import streamlit as st
 import numpy as np
-import pickle
+import joblib
 import gdown
 import os
 
-# ---------------- PAGE CONFIG ----------------
+# ---------------- CONFIG ----------------
 st.set_page_config(
     page_title="Student Performance Predictor",
     page_icon="🎓",
     layout="centered"
 )
 
-# ---------------- TITLE ----------------
-st.markdown("""
-<h1 style='text-align:center;'>🎓 Student Performance Prediction</h1>
-<p style='text-align:center;color:gray;'>
-Predict student performance using Machine Learning
-</p>
-""", unsafe_allow_html=True)
+MODEL_URL = "https://drive.google.com/uc?id=1L__y451voKm1F7OE8cZizHm_Fq3mzTDW"
+MODEL_PATH = "student_model.pkl"
 
-# ---------------- MODEL DOWNLOAD ----------------
-MODEL_URL = "https://drive.google.com/file/d/1L__y451voKm1F7OE8cZizHm_Fq3mzTDW/view?usp=sharing"
-MODEL_PATH = "scalar.pkl"
-
+# ---------------- LOAD MODEL ----------------
 @st.cache_resource
 def load_model():
     if not os.path.exists(MODEL_PATH):
-        with st.spinner("Downloading model from Google Drive..."):
-            gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
-    return pickle.load(open(MODEL_PATH, "rb"))
-
-@st.cache_resource
-def load_scaler():
-    return pickle.load(open("scaler.pkl", "rb"))
+        gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
+    model = joblib.load(MODEL_PATH)
+    return model
 
 model = load_model()
-scaler = load_scaler()
 
-# ---------------- INPUT SECTION ----------------
-st.subheader("📥 Enter Student Details")
+# ---------------- UI ----------------
+st.markdown("<h1 style='text-align:center;'>🎓 Student Performance Prediction</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center;'>Predict student performance using Machine Learning</p>", unsafe_allow_html=True)
+st.divider()
 
-col1, col2 = st.columns(2)
+with st.form("prediction_form"):
+    col1, col2 = st.columns(2)
 
-with col1:
-    hours_studied = st.number_input("📘 Hours Studied", 0, 24, 5)
-    attendance = st.number_input("🏫 Attendance (%)", 0, 100, 75)
-    sleep_hours = st.number_input("😴 Sleep Hours", 0, 12, 7)
+    with col1:
+        study_time = st.number_input("📘 Study Time (hours/day)", 0.0, 24.0, 3.0)
+        absences = st.number_input("❌ Absences", 0, 100, 2)
+        failures = st.number_input("⚠️ Past Failures", 0, 5, 0)
 
-with col2:
-    previous_score = st.number_input("📝 Previous Score", 0, 100, 60)
-    extracurricular = st.selectbox("🎨 Extracurricular Activities", ["No", "Yes"])
-    internet_access = st.selectbox("🌐 Internet Access", ["No", "Yes"])
+    with col2:
+        age = st.number_input("🎂 Age", 10, 30, 18)
+        health = st.slider("💪 Health (1 = Poor, 5 = Excellent)", 1, 5, 3)
+        free_time = st.slider("🎮 Free Time (1–5)", 1, 5, 3)
 
-# Encoding
-extra = 1 if extracurricular == "Yes" else 0
-internet = 1 if internet_access == "Yes" else 0
+    submit = st.form_submit_button("🔍 Predict Performance")
 
 # ---------------- PREDICTION ----------------
-if st.button("🔮 Predict Performance"):
-    input_data = np.array([[hours_studied, attendance, sleep_hours,
-                             previous_score, extra, internet]])
+if submit:
+    input_data = np.array([[study_time, absences, failures, age, health, free_time]])
+    prediction = model.predict(input_data)
 
-    scaled_data = scaler.transform(input_data)
-    prediction = model.predict(scaled_data)[0]
+    st.success(f"📊 Predicted Final Score: **{prediction[0]:.2f}**")
 
-    st.success(f"📊 Predicted Student Performance Score: **{prediction:.2f}**")
+    if prediction[0] >= 75:
+        st.balloons()
+        st.markdown("🎉 **Excellent Performance Expected!**")
+    elif prediction[0] >= 50:
+        st.markdown("🙂 **Average Performance Expected**")
+    else:
+        st.warning("⚠️ **Needs Improvement**")
 
-# ---------------- FOOTER ----------------
-st.markdown("""
-<hr>
-<p style='text-align:center;color:gray;'>
-Made with ❤️ using Streamlit & Machine Learning
-</p>
-""", unsafe_allow_html=True)
+st.divider()
+st.caption("🚀 Built with Streamlit & Machine Learning")
