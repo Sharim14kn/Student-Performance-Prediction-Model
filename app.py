@@ -4,104 +4,88 @@ import joblib
 import gdown
 import os
 
-# ================== CONFIG ==================
+# ================= CONFIG =================
 st.set_page_config(
     page_title="Student Performance Predictor",
     page_icon="🎓",
     layout="centered"
 )
 
-# 🔗 Google Drive links
 MODEL_URL = "https://drive.google.com/uc?id=1L__y451voKm1F7OE8cZizHm_Fq3mzTDW"
-SCALER_URL = "https://drive.google.com/file/d/1x4rRiiEOb_I9yA0UXC1UaanA-s4rYZXb/view?usp=sharing"  # <-- agar scaler hai to yahan link daalo, warna None
-
 MODEL_PATH = "student_model.pkl"
-SCALER_PATH = "scaler.pkl"
 
-# ================== LOAD MODEL ==================
+# ================= LOAD MODEL =================
 @st.cache_resource
-def load_artifacts():
-    # download model
+def load_model():
     if not os.path.exists(MODEL_PATH):
         gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
+    return joblib.load(MODEL_PATH)
 
-    model = joblib.load(MODEL_PATH)
+model = load_model()
 
-    scaler = None
-    if SCALER_URL:
-        if not os.path.exists(SCALER_PATH):
-            gdown.download(SCALER_URL, SCALER_PATH, quiet=False)
-        scaler = joblib.load(SCALER_PATH)
-
-    return model, scaler
-
-
-model, scaler = load_artifacts()
-
-# ================== UI ==================
-st.markdown("<h1 style='text-align:center;'>🎓 Student Performance Prediction</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align:center;'>Machine Learning Based Academic Score Prediction</p>", unsafe_allow_html=True)
+# ================= UI =================
+st.title("🎓 Student Performance Prediction")
+st.caption("ML-based academic score prediction")
 st.divider()
 
-# show expected feature count (debug + safety)
 st.info(f"✅ Model expects **{model.n_features_in_} features**")
 
-# ================== INPUT FORM ==================
+# ================= INPUT FORM =================
 with st.form("prediction_form"):
     col1, col2 = st.columns(2)
 
     with col1:
-        study_time = st.number_input("📘 Study Time (hours/day)", 0.0, 24.0, 2.0)
+        age = st.number_input("🎂 Age", 10, 25, 18)
+        study_time = st.slider("📘 Study Time (1–4)", 1, 4, 2)
+        failures = st.slider("⚠️ Past Failures", 0, 4, 0)
         absences = st.number_input("❌ Absences", 0, 100, 4)
-        failures = st.number_input("⚠️ Past Failures", 0, 5, 0)
-        age = st.number_input("🎂 Age", 10, 30, 18)
 
     with col2:
-        health = st.slider("💪 Health (1 = Poor, 5 = Excellent)", 1, 5, 3)
+        health = st.slider("💪 Health (1–5)", 1, 5, 3)
         free_time = st.slider("🎮 Free Time (1–5)", 1, 5, 3)
-        goout = st.slider("🚶 Go Out (1–5)", 1, 5, 3)
-        travel_time = st.slider("🚌 Travel Time (1–4)", 1, 4, 1)
 
-    submit = st.form_submit_button("🔍 Predict Performance")
+    submit = st.form_submit_button("🔍 Predict")
 
-# ================== PREDICTION ==================
+# ================= PREDICTION =================
 if submit:
-    # 🔥 EXACT SAME ORDER AS TRAINING
+    """
+    FINAL FEATURE VECTOR (13 features)
+    Order MUST match training order
+    """
+
     input_data = np.array([[
-        study_time,
-        absences,
-        failures,
-        age,
-        health,
-        free_time,
-        goout,
-        travel_time
+        1,          # school (GP=1 default)
+        1,          # sex (Male=1)
+        age,        # age
+        1,          # address (Urban=1)
+        study_time, # studytime
+        failures,   # failures
+        0,          # schoolsup (No)
+        1,          # famsup (Yes)
+        0,          # paid classes (No)
+        1,          # activities (Yes)
+        health,     # health
+        absences,   # absences
+        free_time   # freetime
     ]])
 
-    # safety check
+    # SAFETY CHECK
     if input_data.shape[1] != model.n_features_in_:
-        st.error(
-            f"❌ Feature mismatch: Model expects {model.n_features_in_} "
-            f"but received {input_data.shape[1]}"
-        )
+        st.error("❌ Feature mismatch even after fix")
         st.stop()
-
-    # apply scaler if exists
-    if scaler is not None:
-        input_data = scaler.transform(input_data)
 
     prediction = model.predict(input_data)[0]
 
-    # ================== RESULT ==================
+    # ================= RESULT =================
     st.success(f"📊 Predicted Final Score: **{prediction:.2f}**")
 
     if prediction >= 75:
         st.balloons()
-        st.markdown("🎉 **Excellent Performance Expected!**")
+        st.markdown("🎉 **Excellent Performance Expected**")
     elif prediction >= 50:
         st.markdown("🙂 **Average Performance Expected**")
     else:
         st.warning("⚠️ **Needs Improvement**")
 
 st.divider()
-st.caption("🚀 Built with Streamlit • Scikit-Learn • Google Drive Models")
+st.caption("🚀 Built with Streamlit & Scikit-learn")
