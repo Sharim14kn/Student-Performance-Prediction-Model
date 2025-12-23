@@ -24,7 +24,12 @@ MODEL_URL = "https://drive.google.com/uc?id=1gVFLj41ESTQgwFQQDIl4aPBrTnb6-pCg"
 def load_model():
     if not os.path.exists(MODEL_PATH):
         with st.spinner("📥 Downloading ML model..."):
-            gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
+            gdown.download(
+                "https://drive.google.com/file/d/1gVFLj41ESTQgwFQQDIl4aPBrTnb6-pCg/view",
+                MODEL_PATH,
+                quiet=False,
+                fuzzy=True
+            )
 
     with open(MODEL_PATH, "rb") as f:
         return pickle.load(f)
