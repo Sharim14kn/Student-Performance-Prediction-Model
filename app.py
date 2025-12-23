@@ -13,7 +13,7 @@ st.set_page_config(
 
 # 🔗 Google Drive links
 MODEL_URL = "https://drive.google.com/uc?id=1L__y451voKm1F7OE8cZizHm_Fq3mzTDW"
-SCALER_URL = None  # <-- agar scaler hai to yahan link daalo, warna None
+SCALER_URL = "https://drive.google.com/file/d/1x4rRiiEOb_I9yA0UXC1UaanA-s4rYZXb/view?usp=sharing"  # <-- agar scaler hai to yahan link daalo, warna None
 
 MODEL_PATH = "student_model.pkl"
 SCALER_PATH = "scaler.pkl"
