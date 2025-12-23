@@ -17,7 +17,8 @@ MODEL_PATH = "student_performance_model.pkl"
 SCALER_PATH = "scaler.pkl"
 DATA_PATH = "Student_performance_data.csv"
 
-MODEL_URL = "https://drive.google.com/uc?export=download&id=1gVFLj41ESTQgwFQQDIl4aPBrTnb6-pCg"
+MODEL_URL = https://drive.google.com/uc?export=download&id=1gVFLj41ESTQgwFQQDIl4aPBrTnb6-pCg
+
 
 # ---------------- DOWNLOAD MODEL ----------------
 @st.cache_resource
